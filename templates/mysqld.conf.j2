@@ -1,0 +1,21 @@
+[mysqld]
+innodb_large_prefix = 1
+innodb_file_format = barracuda
+innodb_file_per_table = true
+innodb_autoinc_lock_mode=2
+binlog_format=ROW
+default-storage-engine=innodb
+bind-address={% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}{% endif %}{% endfor %}
+
+pid-file        = /var/run/mysqld-ha/mysqld.pid
+socket          = /var/run/mysqld-ha/mysqld.sock
+datadir         = /var/lib/mysql-ha
+
+#galera settings
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+wsrep_cluster_name="{{ mariadb_ha_cluster_name }}"
+wsrep_cluster_address="gcomm://{% for item in groups[mariadb_ha_group] %}127.44.1.{{1 + loop.index0}}{{ "," if not loop.last else "" }}{% endfor %}"
+wsrep_node_address="{% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}{% endif %}{% endfor %}"
+wsrep_node_name="{{ ansible_fqdn }}"
+wsrep_sst_method=rsync

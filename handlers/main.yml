@@ -1,0 +1,4 @@
+---
+  - name: restart mariadb
+    become: True
+    service: name=mariadb@ha-galera enabled=yes state=restarted

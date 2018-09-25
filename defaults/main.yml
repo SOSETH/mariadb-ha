@@ -1,0 +1,18 @@
+---
+mariadb_ha_group: 'mon-server'
+# Don't accept remote connections
+mariadb_ha_local_only: True
+# You'll need to set this:
+mariadb_root_password: None
+mariadb_ha_databases: []
+#  - name: maildb
+#    user: maildb
+#    password: foobar
+
+mariadb_ha_ports:
+   3306: db
+   4567: galera
+   4568: ist
+   4444: sst
+mariadb_public_port_offset: 1000
+mariadb_ha_cluster_name: ansiblecluster

@@ -1,0 +1,84 @@
+---
+  - name: Install mariadb
+    become: True
+    apt: name={{ item }} state=present update_cache=yes cache_valid_time=1800
+    with_items:
+      - mariadb-server
+      - mariadb-client
+      - mariadb-common
+      - python-mysqldb
+      - galera-3
+
+  - name: Create HAProxy dropin
+    become: True
+    template:
+      src: haproxy-dropin.j2
+      dest: /etc/haproxy/conf.d/30-mariadb-galera.conf
+      owner: root
+      group: root
+      mode: 0644
+    register: hapchanged
+
+  - name: Concat client certificate
+    become: True
+    shell: cat /etc/haproxy/mdb-cl.crt /etc/haproxy/mdb-cl.key > /etc/haproxy/mdb-client-full.pem && chown 600 /etc/haproxy/mdb-client-full.pem
+    changed_when: False
+
+  - name: Concat server certificate
+    become: True
+    shell: cat /etc/haproxy/mdb-sv.crt /etc/haproxy/mdb-sv.key > /etc/haproxy/mdb-server-full.pem && chown 600 /etc/haproxy/mdb-server-full.pem
+    changed_when: False
+
+  - name: Restart HAProxy
+    when: hapchanged.changed
+    become: True
+    serial: 1
+    service:
+      name: haproxy
+      state: restarted
+
+  - name: Create MariaDB Galera config file
+    become: True
+    serial: 1
+    template:
+      src: mysqld.conf.j2
+      dest: /etc/mysql/conf.d/myha-galera.cnf
+      owner: root
+      group: root
+      mode: 0644
+    register: confchanged
+
+  - name: Restart MariaDB after config change
+    become: True
+    service:
+      name: mariadb@ha-galera
+      state: restarted
+      enabled: yes
+    when: confchanged.changed
+
+  - name: Remove all anonymous accounts
+    become: True
+    mysql_user:
+      name: ''
+      host_all: "yes"
+      state: absent
+
+  - name: Set MariaDB root password
+    mysql_user:
+      name: root
+      password: "{{ mariadb_ha_root_password }}"
+      host_all: yes
+
+  - name: Create databases
+    become: True
+    with_items: "{{ mariadb_ha_databases }}"
+    mysql_db:
+      name: "{{ item.name }}"
+
+  - name: Create users
+    become: True
+    with_items: "{{ mariadb_ha_databases }}"
+    mysql_user:
+      name: "{{ item.user }}"
+      password: "{{ item.password }}"
+      priv: "{{ item.name }}.*:ALL"
