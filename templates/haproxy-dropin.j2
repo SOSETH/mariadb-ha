@@ -1,31 +1,31 @@
 {% for item in groups[mariadb_ha_group] %}
 {% set outer_loop = loop %}
-{% for port, name in mariadb_ha_ports.items() %}
+{% for port, val in mariadb_ha_ports.items() %}
 {% if item != ansible_fqdn %}
-frontend {{item}}-mdb-front-{{ name }}
-	bind 127.44.1.{{1 + outer_loop.index0}}:{{ port }}
+frontend {{item}}-mdb-front-{{ val.name }}
+	bind 127.44.1.{{1 + outer_loop.index0}}:{{ val.port }}
 	mode tcp
-	default_backend {{item}}-mdb-back-{{ name }}
+	default_backend {{item}}-mdb-back-{{ val.name }}
 
-backend {{item}}-mdb-back-{{ name }}
+backend {{item}}-mdb-back-{{ val.name }}
 	mode tcp
 	server remote {{item}}:{{ port + mariadb_public_port_offset }} ssl crt /etc/haproxy/mdb-client-full.pem ca-file /etc/haproxy/mdb-ca.crt verify required
 {% else %}
-frontend mdb-front-{{ name }}
-	bind 127.44.0.1:{{ port }}
+frontend mdb-front-{{ val.name }}
+	bind 127.44.0.1:{{ val.port }}
 	mode tcp
-	default_backend mdb-back-{{ name }}
+	default_backend mdb-back-{{ val.name }}
 
-backend mdb-back-{{ name }}
+backend mdb-back-{{ val.name }}
 	mode tcp
 	server remote 127.44.1.{{1 + outer_loop.index0}}:{{ port }}
 {% endif %}
 {% endfor %}
 {% endfor %}
 
-{% for port, name in mariadb_ha_ports.items() %}
-frontend mdb-public-front-{{ name }}
+{% for port, val in mariadb_ha_ports.items() %}
+frontend mdb-public-front-{{ val.name }}
 	bind :::{{ port + mariadb_public_port_offset }} v4v6 ssl crt /etc/haproxy/mdb-server-full.pem ca-file /etc/haproxy/mdb-ca.crt crl-file /etc/haproxy/mdb-crl.pem verify required
 	mode tcp
-	default_backend mdb-back-{{ name }}
+	default_backend mdb-back-{{ val.name }}
 {% endfor %}

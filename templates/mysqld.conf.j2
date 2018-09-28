@@ -15,7 +15,7 @@ datadir         = /var/lib/mysql-ha
 wsrep_on=ON
 wsrep_provider=/usr/lib/galera/libgalera_smm.so
 wsrep_cluster_name="{{ mariadb_ha_cluster_name }}"
-wsrep_cluster_address="gcomm://{% for item in groups[mariadb_ha_group] %}127.44.1.{{1 + loop.index0}}{{ "," if not loop.last else "" }}{% endfor %}"
+wsrep_cluster_address="gcomm://{% for item in groups[mariadb_ha_group] %}127.44.1.{{1 + loop.index0}}:4569{{ "," if not loop.last else "" }}{% endfor %}"
 wsrep_node_address="{% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}{% endif %}{% endfor %}"
 wsrep_node_name="{{ ansible_fqdn }}"
 wsrep_sst_method=rsync

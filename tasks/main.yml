@@ -42,7 +42,7 @@
     serial: 1
     template:
       src: mysqld.conf.j2
-      dest: /etc/mysql/conf.d/myha-galera.cnf
+      dest: /etc/mysql/conf.d/mygalera.cnf
       owner: root
       group: root
       mode: 0644
@@ -61,6 +61,7 @@
     mysql_user:
       name: ''
       host_all: "yes"
+      login_host: "127.44.0.1"
       state: absent
 
   - name: Set MariaDB root password
@@ -68,12 +69,14 @@
       name: root
       password: "{{ mariadb_ha_root_password }}"
       host_all: yes
+      login_host: "127.44.0.1"
 
   - name: Create databases
     become: True
     with_items: "{{ mariadb_ha_databases }}"
     mysql_db:
       name: "{{ item.name }}"
+      login_host: "127.44.0.1"
 
   - name: Create users
     become: True
@@ -82,3 +85,4 @@
       name: "{{ item.user }}"
       password: "{{ item.password }}"
       priv: "{{ item.name }}.*:ALL"
+      login_host: "127.44.0.1"
