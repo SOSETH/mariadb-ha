@@ -23,6 +23,7 @@ Configure a mariadb galera cluster for SOSETH use (mainly monitoring).
     cn: "{{ ansible_nodename }}-server"
 ```
 * iptables for blocking external IST/SST port access
+* The ansible filter plugin from `filter_plugins`. You can copy this folder to your playbook directory and take a look at `ansible.cfg` on how to load it.
 
 ## Configuration
 |Var|Default value|Description|
@@ -39,6 +40,7 @@ Configure a mariadb galera cluster for SOSETH use (mainly monitoring).
 ## Overview
 This role will set up a MariaDB Galera cluster, tunneling all inter-node
 communication through HAProxy so that it gets encrypted and authenticated.
+Each node will per default it's database reachable on `127.44.0.1:3307`.
 During normal operation, you'll notice that a Galera Cluster is not reboot-safe
 (as in, it does not survive a shutdown and subsequent powerup of all nodes).
 Initially, and after every full shutdown, you'll need to pick a node and manually
@@ -47,8 +49,9 @@ do
 galera_new_cluster mariadb@galera.service
 ```
 to bootstrap the service. Afterwards, the service can be restarted on the other
-nodes but take into account that any given node can only transfert state to
-a single other node during SST at a time.
+nodes but take into account that any given node can only transfer state to
+a single other node during SST at a time (so maybe don't start all other nodes
+at once ;-).
 On initial setup, it does not matter which node you execute this command on.
 On subsequent cluster bootstraps, you'll need to pick the node with the highest
 `seqno` in `/var/lib/mysql-ha/grastate.dat`. Picking the wrong node *will* lead
