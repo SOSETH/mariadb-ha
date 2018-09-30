@@ -2,6 +2,7 @@
 {% set outer_loop = loop %}
 {% for port, val in mariadb_ha_ports.items() %}
 {% if item != ansible_fqdn %}
+
 frontend {{item}}-mdb-front-{{ val.name }}
 	bind 127.44.1.{{1 + outer_loop.index0}}:{{ val.port }}
 	mode tcp
@@ -11,6 +12,7 @@ backend {{item}}-mdb-back-{{ val.name }}
 	mode tcp
 	server remote {{item}}:{{ port + mariadb_public_port_offset }} ssl crt /etc/haproxy/mdb-client-full.pem ca-file /etc/haproxy/mdb-ca.crt verify required
 {% else %}
+
 frontend mdb-front-{{ val.name }}
 	bind 127.44.0.1:{{ val.port }}
 	mode tcp

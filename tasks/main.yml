@@ -9,6 +9,40 @@
       - python-mysqldb
       - galera-3
 
+  # Step 1: For multi-instance mariadb, we use the systemd generator (mariadb@),
+  # which requires the other ways to start the service (mysql, mariadb) to be
+  # disabled. The 'old' (default) instance can then be started with mariadb@sql.
+  - name: Load service status
+    become: True
+    service_facts:
+
+  - name: Check whether 'old' service is running
+    set_fact:
+      oldsvc: True
+    when: ('mysql.service' in services and services['mysql.service'].state == 'running') or ('mariadb.service' in services and services['mariadb.service'].state == 'running')
+
+  - name: Disable and stop old services
+    when: oldsvc|default(False)
+    become: True
+    service:
+      name: "{{ item }}"
+      state: stopped
+      enabled: no
+    with_items:
+      - mysql.service
+      - mariadb.service
+
+  - name: Enable new service for old database
+    when: oldsvc|default(False)
+    become: True
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    with_items:
+      - 'mariadb@sql.service'
+
+  # Step 2: Configure prereqs
   - name: Create HAProxy dropin
     become: True
     template:
@@ -32,14 +66,12 @@
   - name: Restart HAProxy
     when: hapchanged.changed
     become: True
-    serial: 1
     service:
       name: haproxy
       state: restarted
 
   - name: Create MariaDB Galera config file
     become: True
-    serial: 1
     template:
       src: mysqld.conf.j2
       dest: /etc/mysql/conf.d/mygalera.cnf
@@ -48,13 +80,61 @@
       mode: 0644
     register: confchanged
 
-  - name: Restart MariaDB after config change
+  - name: Check whether data directory exists
     become: True
-    service:
-      name: mariadb@ha-galera
-      state: restarted
-      enabled: yes
-    when: confchanged.changed
+    stat:
+      path: /var/lib/mysql-ha
+    register: datadir
+
+  - name: Create initial data directory
+    become: True
+    when: not datadir.stat.exists
+    command: mysql_install_db --user=mysql --basedir=/usr --datadir=/var/lib/mysql-ha
+
+  - name: Ensure that tempdir is created after each boot
+    become: True
+    template:
+      src: tmpfiles.conf.j2
+      dest: /etc/tmpfiles.d/mysql-ha.conf
+      owner: root
+      group: root
+      mode: 0644
+    notify: restart tmpfiles
+
+  - name: Install custom mariadbackup SST handler
+    become: True
+    template:
+      src: wsrep_sst_mariabackup.j2
+      dest: /usr/bin/wsrep_sst_mariabackup_cust
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create systemd dropin directory
+    become: True
+    file:
+      path: /etc/systemd/system/mariadb@galera.service.d
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create systemd dropin
+    become: True
+    template:
+      src: dropin.j2
+      dest: /etc/systemd/system/mariadb@galera.service.d/ansible.conf
+      owner: root
+      group: root
+      mode: 0644
+    notify: reload systemd
+
+  - meta: flush_handlers
+
+  # Galera clusters are _not_ reboot-safe. Have the user bootstrap the new cluster, just in case...
+  - pause:
+      prompt: "No running MariaDB server detected. Please consult the README on how to start one and press <ENTER> to continue"
+    when: not hostvars|any_running(groups[mariadb_ha_group], 'mariadb@galera.service')
 
   - name: Remove all anonymous accounts
     become: True
@@ -62,7 +142,9 @@
       name: ''
       host_all: "yes"
       login_host: "127.44.0.1"
+      login_port: "4307"
       state: absent
+    ignore_errors: True
 
   - name: Set MariaDB root password
     mysql_user:
@@ -70,6 +152,28 @@
       password: "{{ mariadb_ha_root_password }}"
       host_all: yes
       login_host: "127.44.0.1"
+      login_port: "4307"
+    ignore_errors: True
+
+  - name: Update root's stored mariadb password
+    template:
+      src: my.cnf.user.j2
+      dest: /root/.my.cnf
+      owner: root
+      group: root
+      mode: 0640
+    ignore_errors: True
+
+  - name: Create backup user
+    mysql_user:
+      name: dump
+      password: "{{ mariadb_ha_dump_password }}"
+      host_all: no
+      host: localhost
+      priv: "*.*:PROCESS,RELOAD,LOCK TABLES,REPLICATION CLIENT"
+      login_host: "127.44.0.1"
+      login_port: "4307"
+    ignore_errors: True
 
   - name: Create databases
     become: True
@@ -77,6 +181,8 @@
     mysql_db:
       name: "{{ item.name }}"
       login_host: "127.44.0.1"
+      login_port: "4307"
+    ignore_errors: True
 
   - name: Create users
     become: True
@@ -86,3 +192,13 @@
       password: "{{ item.password }}"
       priv: "{{ item.name }}.*:ALL"
       login_host: "127.44.0.1"
+      login_port: "4307"
+    ignore_errors: True
+
+  # At this point, one correctly configured node is guaranteed to be running.
+  # Restart the other nodes if necessary
+  - name: Start mariadb
+    service:
+      name: 'mariadb@galera'
+      state: started
+      enabled: yes

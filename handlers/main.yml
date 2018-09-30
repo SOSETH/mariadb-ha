@@ -1,4 +1,12 @@
 ---
-  - name: restart mariadb
+  - name: restart tmpfiles
     become: True
-    service: name=mariadb@ha-galera enabled=yes state=restarted
+    command: systemd-tmpfiles --create
+
+  - name: restart haproxy
+    become: True
+    service: name=haproxy state=restarted enabled=yes
+
+  - name: reload systemd
+    become: True
+    command: systemctl daemon-reload

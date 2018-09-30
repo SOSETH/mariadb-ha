@@ -3,22 +3,25 @@ mariadb_ha_group: 'mon-server'
 # Don't accept remote connections
 mariadb_ha_local_only: True
 # You'll need to set this:
-  #mariadb_root_password: None
+mariadb_ha_root_password: mariadb_root_password
+mariadb_ha_dump_password: foobarbaz
 mariadb_ha_databases: []
 #  - name: maildb
 #    user: maildb
 #    password: foobar
 
+mariadb_listen_port: 3307
+
 mariadb_ha_ports:
-  3306:
+  3307:
     name: db
-    port: 4306
+    port: 4307
   4567:
     name: galera
-    port: 4569
+    port: 5567
   4568:
     name: ist
-    port: 4568
+    port: 5568
   4444:
     name: sst
     port: 4444

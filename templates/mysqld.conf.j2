@@ -7,6 +7,8 @@ binlog_format=ROW
 default-storage-engine=innodb
 bind-address={% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}{% endif %}{% endfor %}
 
+port={{mariadb_listen_port}}
+
 pid-file        = /var/run/mysqld-ha/mysqld.pid
 socket          = /var/run/mysqld-ha/mysqld.sock
 datadir         = /var/lib/mysql-ha
@@ -15,7 +17,9 @@ datadir         = /var/lib/mysql-ha
 wsrep_on=ON
 wsrep_provider=/usr/lib/galera/libgalera_smm.so
 wsrep_cluster_name="{{ mariadb_ha_cluster_name }}"
-wsrep_cluster_address="gcomm://{% for item in groups[mariadb_ha_group] %}127.44.1.{{1 + loop.index0}}:4569{{ "," if not loop.last else "" }}{% endfor %}"
-wsrep_node_address="{% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}{% endif %}{% endfor %}"
+wsrep_cluster_address="gcomm://{% for item in groups[mariadb_ha_group] %}127.44.1.{{1 + loop.index0}}:5567{{ "," if not loop.last else "" }}{% endfor %}"
+wsrep_node_address="{% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}:4567{% endif %}{% endfor %}"
 wsrep_node_name="{{ ansible_fqdn }}"
-wsrep_sst_method=rsync
+wsrep_sst_method=mariabackup_cust
+wsrep_sst_receive_address="{% for item in groups[mariadb_ha_group] %}{% if item == ansible_fqdn %}127.44.1.{{1 + loop.index0}}:4444{% endif %}{% endfor %}"
+wsrep_sst_auth="dump:{{ mariadb_ha_dump_password }}"

@@ -1,0 +1,7 @@
+[Service]
+# At the moment, IST/SST ports in MariaDB are always bound *TO ALL INTERFACES*,
+# with no option to change it. Use iptables to stop the madness...
+ExecStartPre=/sbin/iptables -I INPUT -m tcp -p tcp --dport 4567 ! -s 127.0.0.0/8 -j REJECT
+ExecStartPre=/sbin/ip6tables -I INPUT -m tcp -p tcp --dport 4567 ! -s ::1 -j REJECT
+ExecStartPre=/sbin/iptables -I INPUT -m tcp -p tcp --dport 4568 ! -s 127.0.0.0/8 -j REJECT
+ExecStartPre=/sbin/ip6tables -I INPUT -m tcp -p tcp --dport 4568 ! -s ::1 -j REJECT
