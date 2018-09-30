@@ -144,6 +144,7 @@
       login_host: "127.44.0.1"
       login_port: "4307"
       state: absent
+      config_file: /root/.my-ha.cnf
     ignore_errors: True
 
   - name: Set MariaDB root password
@@ -153,12 +154,13 @@
       host_all: yes
       login_host: "127.44.0.1"
       login_port: "4307"
+      config_file: /root/.my-ha.cnf
     ignore_errors: True
 
   - name: Update root's stored mariadb password
     template:
       src: my.cnf.user.j2
-      dest: /root/.my.cnf
+      dest: /root/.my-ha.cnf
       owner: root
       group: root
       mode: 0640
@@ -173,6 +175,7 @@
       priv: "*.*:PROCESS,RELOAD,LOCK TABLES,REPLICATION CLIENT"
       login_host: "127.44.0.1"
       login_port: "4307"
+      config_file: /root/.my-ha.cnf
     ignore_errors: True
 
   - name: Create databases
@@ -182,6 +185,7 @@
       name: "{{ item.name }}"
       login_host: "127.44.0.1"
       login_port: "4307"
+      config_file: /root/.my-ha.cnf
     ignore_errors: True
 
   - name: Create users
@@ -193,6 +197,7 @@
       priv: "{{ item.name }}.*:ALL"
       login_host: "127.44.0.1"
       login_port: "4307"
+      config_file: /root/.my-ha.cnf
     ignore_errors: True
 
   # At this point, one correctly configured node is guaranteed to be running.
