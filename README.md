@@ -40,7 +40,7 @@ Configure a mariadb galera cluster for SOSETH use (mainly monitoring).
 ## Overview
 This role will set up a MariaDB Galera cluster, tunneling all inter-node
 communication through HAProxy so that it gets encrypted and authenticated.
-Each node will per default it's database reachable on `127.44.0.1:3307`.
+Each node will per default have it's database reachable on `127.44.0.1:3307`.
 During normal operation, you'll notice that a Galera Cluster is not reboot-safe
 (as in, it does not survive a shutdown and subsequent powerup of all nodes).
 Initially, and after every full shutdown, you'll need to pick a node and manually
