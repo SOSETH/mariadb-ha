@@ -1,13 +1,16 @@
 ---
   - name: Install mariadb
     become: True
-    apt: name={{ item }} state=present update_cache=yes cache_valid_time=1800
-    with_items:
-      - mariadb-server
-      - mariadb-client
-      - mariadb-common
-      - python-mysqldb
-      - galera-3
+    apt:
+      name:
+        - mariadb-server
+        - mariadb-client
+        - mariadb-common
+        - python-mysqldb
+        - galera-3
+      state: present
+      update_cache: True
+      cache_valid_time: 1800
 
   # Step 1: For multi-instance mariadb, we use the systemd generator (mariadb@),
   # which requires the other ways to start the service (mysql, mariadb) to be
