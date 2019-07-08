@@ -6,7 +6,7 @@
         - mariadb-server
         - mariadb-client
         - mariadb-common
-        - python-mysqldb
+        - python3-mysqldb
         - galera-3
       state: present
       update_cache: True
