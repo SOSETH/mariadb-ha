@@ -1,7 +1,7 @@
 ---
 mariadb_ha_group: 'mon_server'
 # You'll need to set this:
-mariadb_ha_root_password: mariadb_root_password
+mariadb_ha_root_password: "{{ mariadb_root_password }}"
 mariadb_ha_dump_password: None
 mariadb_ha_databases: []
 #  - name: maildb

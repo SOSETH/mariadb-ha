@@ -8,6 +8,7 @@
         - mariadb-common
         - python3-mysqldb
         - galera-3
+        - mariadb-backup
       state: present
       update_cache: True
       cache_valid_time: 1800
