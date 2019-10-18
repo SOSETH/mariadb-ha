@@ -13,6 +13,8 @@ pid-file        = /var/run/mysqld-ha/mysqld.pid
 socket          = /var/run/mysqld-ha/mysqld.sock
 datadir         = /var/lib/mysql-ha
 
+max_connections={{ mariadb_ha_maxcon }}
+
 #galera settings
 wsrep_on=ON
 wsrep_provider=/usr/lib/galera/libgalera_smm.so

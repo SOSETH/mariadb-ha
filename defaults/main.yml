@@ -25,3 +25,6 @@ mariadb_ha_ports:
     port: 4444
 mariadb_public_port_offset: 1000
 mariadb_ha_cluster_name: ansiblecluster
+
+mariadb_ha_ulimit: 1024
+mariadb_ha_maxcon: 151
